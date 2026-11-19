@@ -33,3 +33,6 @@ python -m venv .venv
 - `report.py` — synthèse (W/K et %) et tableau calculé / officiel / écart
 - `tests/test_engine.py` — le total d'enveloppe doit retrouver la référence XML
 - `app.py` — écran Streamlit (synthèse, comparaison, traçabilité)
+
+
+Pour lancer la page WEB ".\.venv\Scripts\streamlit run app.py" dans un nouveau terminal.
