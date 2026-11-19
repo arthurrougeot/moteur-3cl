@@ -30,8 +30,8 @@ def _afficher(cadre: pd.DataFrame, formats: dict[str, str]) -> pd.DataFrame:
 st.set_page_config(page_title="Déperditions 3CL-DPE", layout="wide")
 st.title("Déperditions d'enveloppe — méthode 3CL-DPE")
 st.caption(
-    "H = Σ (S × U × b) pour les parois, et H = k × l × pourcentage × b pour les ponts. "
-    "Le renouvellement d'air du XML n'est pas recalculé."
+    "H = Σ (S × U × b) pour les parois, H = k × l × pourcentage × b pour les ponts, "
+    "et DR = Hvent + Hperm pour le renouvellement d'air."
 )
 
 # --- Choix du fichier XML (glisser-déposer) ---
@@ -60,18 +60,58 @@ except ValueError as exc:
     st.error(f"Données manquantes ou invalides dans le XML : {exc}")
     st.stop()
 
+vent = resultat.ventilation
+
 # --- Chiffres clés en haut de page ---
-colonne_a, colonne_b, colonne_c = st.columns(3)
-colonne_a.metric("DPE", dpe.numero_dpe or source)
-colonne_b.metric(
+col_a, col_b, col_c, col_d = st.columns(4)
+col_a.metric("DPE", dpe.numero_dpe or source)
+col_b.metric(
     "Surface habitable",
     "—" if dpe.surface_habitable_m2 is None else f"{dpe.surface_habitable_m2:.1f} m²",
 )
-colonne_c.metric("H enveloppe", f"{resultat.h_enveloppe:.2f} W/K")
+col_c.metric("H transmission (parois + ponts)", f"{resultat.h_transmission:.2f} W/K")
+col_d.metric(
+    "GV enveloppe (avec air)",
+    f"{resultat.h_enveloppe:.2f} W/K",
+    delta=(
+        None
+        if resultat.h_renouvellement_air is None
+        else f"dont air : {resultat.h_renouvellement_air:.2f} W/K"
+    ),
+    delta_color="off",
+)
+
+# --- Statut visible du calcul de ventilation ---
+if vent.calcule:
+    st.success(
+        f"**Ventilation recalculée (méthode 3CL-DPE)** : "
+        f"DR = {vent.dr_w_k:.2f} W/K "
+        f"(Hvent = {vent.hvent_w_k:.2f} W/K, Hperm = {vent.hperm_w_k:.2f} W/K)."
+    )
+elif vent.source == "reference_xml":
+    causes = "\n".join(f"- {raison}" for raison in vent.raisons_echec)
+    st.warning(
+        "**Calcul des déperditions par ventilation non réalisé** — "
+        f"repli sur la valeur de référence du XML "
+        f"(`deperdition_renouvellement_air` = {vent.dr_w_k:.2f} W/K).\n\n"
+        f"**Cause(s) identifiée(s) :**\n{causes}"
+    )
+else:
+    causes = "\n".join(f"- {raison}" for raison in vent.raisons_echec)
+    st.error(
+        "**Déperditions par ventilation indisponibles** (calcul 3CL impossible et "
+        "valeur de référence absente du XML).\n\n"
+        f"**Cause(s) identifiée(s) :**\n{causes}"
+    )
 
 # --- Bandeau de validation (vert / rouge) par rapport à la référence ADEME ---
+categorie_validation = (
+    "Déperdition enveloppe XML"
+    if vent.calcule
+    else "Enveloppe transmission (parois + ponts)"
+)
 ligne_ref = resultat.comparaison.loc[
-    resultat.comparaison["categorie"] == "Enveloppe transmission (parois + ponts)"
+    resultat.comparaison["categorie"] == categorie_validation
 ].iloc[0]
 
 ecart = ligne_ref["ecart_w_k"]
@@ -79,18 +119,18 @@ ecart_pct = ligne_ref["ecart_relatif_pct"]
 
 if pd.isna(ecart):
     st.warning(
-        "Référence ADEME absente ou incomplète dans le XML : "
+        f"Référence ADEME absente ou incomplète pour « {categorie_validation} » : "
         "impossible de vérifier automatiquement l'écart."
     )
 elif abs(ecart) <= SEUIL_ARRONDI_W_K:
     st.success(
-        f"Calcul conforme à la référence ADEME "
+        f"Calcul conforme à la référence ADEME sur « {categorie_validation} » "
         f"(écart : {ecart:+.4f} W/K, tolérance admise : ±{SEUIL_ARRONDI_W_K} W/K)."
     )
 else:
     detail_pct = "" if pd.isna(ecart_pct) else f", soit {ecart_pct:+.2f} %"
     st.error(
-        f"Écart détecté par rapport à la référence ADEME : "
+        f"Écart détecté par rapport à la référence ADEME sur « {categorie_validation} » : "
         f"{ecart:+.4f} W/K{detail_pct} (tolérance admise : ±{SEUIL_ARRONDI_W_K} W/K). "
         "Consultez l'onglet « Comparaison ADEME » pour identifier le poste en cause."
     )
@@ -102,7 +142,7 @@ onglet_synthese, onglet_comparaison, onglet_detail = st.tabs(
 with onglet_synthese:
     # --- Graphique de la répartition (une barre par catégorie) ---
     repartition = resultat.synthese[
-        resultat.synthese["categorie"] != "Enveloppe (parois + ponts)"
+        ~resultat.synthese["categorie"].str.startswith("Enveloppe")
     ].assign(etiquette=lambda d: d["part_pct"].map("{:.1f} %".format))
     barres = (
         alt.Chart(repartition)
@@ -114,12 +154,13 @@ with onglet_synthese:
                 alt.Tooltip("categorie:N", title="Poste"),
                 alt.Tooltip("deperdition_w_k:Q", title="W/K", format=".2f"),
                 alt.Tooltip("part_pct:Q", title="Part (%)", format=".1f"),
+                alt.Tooltip("source:N", title="Source"),
             ],
         )
     )
     pourcentages = barres.mark_text(align="left", dx=4).encode(text="etiquette:N")
     st.subheader("Répartition des déperditions")
-    st.altair_chart(barres + pourcentages)
+    st.altair_chart(barres + pourcentages, use_container_width=True)
 
     # --- Tableau de synthèse ---
     st.dataframe(
@@ -142,12 +183,19 @@ with onglet_comparaison:
         use_container_width=True,
         hide_index=True,
     )
-    st.info(
-        "deperdition_enveloppe du XML vaut la transmission plus le renouvellement d'air. "
-        "La ligne « Déperdition enveloppe XML » additionne le H calculé et l'air officiel."
-    )
+    if vent.calcule:
+        st.info(
+            "Le renouvellement d'air (DR = Hvent + Hperm) est recalculé selon la méthode "
+            "3CL-DPE et inclus dans la ligne « Déperdition enveloppe XML »."
+        )
+    else:
+        st.info(
+            "Le renouvellement d'air n'ayant pas pu être recalculé, la ligne "
+            "« Déperdition enveloppe XML » additionne la transmission calculée "
+            "et la valeur de référence XML du renouvellement d'air."
+        )
 
 with onglet_detail:
     for cle, cadre in resultat.details.items():
-        st.subheader(cle.replace("_", " "))
+        st.subheader(cle.replace("_", " ").capitalize())
         st.dataframe(cadre, use_container_width=True, hide_index=True)

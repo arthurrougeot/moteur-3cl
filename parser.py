@@ -1,7 +1,7 @@
 """Lecture d'un XML de DPE (schéma ADEME 3CL) vers des modèles typés.
 Les balises optionnelles (``ujn``, ``upb_final``, ``b``, pourcentage de pont
-thermique) restent absentes plutôt que de faire échouer le parse. Les
-coefficients vraiment nécessaires au calcul sont exigés au moment du calcul.
+thermique, champs de ventilation) restent absentes plutôt que de faire échouer
+le parse. Les coefficients nécessaires au calcul sont vérifiés au moment du calcul.
 """
 from __future__ import annotations
 
@@ -92,6 +92,27 @@ class PontThermique(BaseModel):
     b: float = 1.0
 
 
+class Ventilation(BaseModel):
+    description: str | None = None
+    reference: str | None = None
+    tv_debits_ventilation_id: int | None = Field(
+        None,
+        description="Index (1 à 38) de la table officielle des débits 3CL",
+    )
+    enum_type_ventilation_id: int | None = None
+    surface_ventile: float | None = Field(None, description="Sh ventilée, en m²")
+    plusieurs_facade_exposee: int | None = Field(
+        None,
+        description="0 = une seule façade exposée, 1 = plusieurs façades exposées",
+    )
+    q4pa_conv: float | None = Field(
+        None,
+        description="Perméabilité conventionnelle sous 4 Pa, m³/(h.m²)",
+    )
+    hvent_officiel: float | None = None
+    hperm_officiel: float | None = None
+
+
 class DeperditionOfficielle(BaseModel):
     """Valeurs de la balise ``logement/sortie/deperdition``.
     ``deperdition_enveloppe`` du XML est le coefficient global publié par
@@ -107,12 +128,14 @@ class DeperditionOfficielle(BaseModel):
 class Dpe(BaseModel):
     numero_dpe: str | None = None
     surface_habitable_m2: float | None = None
+    hsp_m: float | None = Field(None, description="Hauteur moyenne sous plafond, en m")
     murs: list[Mur]
     planchers_bas: list[PlancherBas]
     planchers_hauts: list[PlancherHaut]
     baies: list[BaieVitree]
     portes: list[Porte]
     ponts_thermiques: list[PontThermique]
+    ventilations: list[Ventilation] = Field(default_factory=list)
     deperdition: DeperditionOfficielle
 
 
@@ -163,9 +186,14 @@ def parse_dpe(source: SourceXml) -> Dpe:
             enveloppe, "pont_thermique_collection", "pont_thermique"
         )
     ]
+    ventilations = [
+        _ventilation(noeud)
+        for noeud in _items(logement, "ventilation_collection", "ventilation")
+    ]
+
+    carac = logement.find("caracteristique_generale")
 
     if not any((murs, planchers_bas, planchers_hauts, baies, portes, ponts_thermiques)):
-        carac = logement.find("caracteristique_generale")
         non_visite = _texte(carac, "appartement_non_visite")
         precision = (
             " (appartement non visité, DPE généré à partir d'un DPE immeuble)"
@@ -178,20 +206,25 @@ def parse_dpe(source: SourceXml) -> Dpe:
             "Impossible de recalculer les déperditions."
         )
 
+    sh_logement = _flottant(carac, "surface_habitable_logement")
+    sh_immeuble = _flottant(carac, "surface_habitable_immeuble")
+    surface_habitable = sh_logement if sh_logement is not None else sh_immeuble
+
     return Dpe(
         numero_dpe=_texte(racine, "numero_dpe"),
-        surface_habitable_m2=_flottant(
-            logement.find("caracteristique_generale"),
-            "surface_habitable_logement",
-        ),
+        surface_habitable_m2=surface_habitable,
+        hsp_m=_flottant(carac, "hsp"),
         murs=murs,
         planchers_bas=planchers_bas,
         planchers_hauts=planchers_hauts,
         baies=baies,
         portes=portes,
         ponts_thermiques=ponts_thermiques,
+        ventilations=ventilations,
         deperdition=_deperdition(logement.find("sortie")),
     )
+
+
 # --------------------------------------------------------------------------
 # Fonctions internes de lecture
 # --------------------------------------------------------------------------
@@ -204,9 +237,9 @@ def _retirer_namespaces(racine: ET.Element) -> None:
             element.tag = element.tag.split("}", 1)[1]
 
 
-def _items(enveloppe: ET.Element, collection: str, balise: str) -> Iterable[ET.Element]:
+def _items(parent: ET.Element, collection: str, balise: str) -> Iterable[ET.Element]:
     """Éléments d'une collection, ou rien si la collection est absente."""
-    noeud = enveloppe.find(collection)
+    noeud = parent.find(collection)
     return [] if noeud is None else noeud.findall(balise)
 
 
@@ -222,6 +255,30 @@ def _texte(noeud: ET.Element | None, balise: str) -> str | None:
 def _flottant(noeud: ET.Element | None, balise: str) -> float | None:
     texte = _texte(noeud, balise)
     return None if texte is None else float(texte.replace(",", "."))
+
+
+def _entier(noeud: ET.Element | None, balise: str) -> int | None:
+    texte = _texte(noeud, balise)
+    if texte is None:
+        return None
+    try:
+        return int(float(texte.replace(",", ".")))
+    except ValueError:
+        return None
+
+
+def _entier_booleen(noeud: ET.Element | None, balise: str) -> int | None:
+    """Lit un indicateur binaire XML (``0`` ou ``1``)."""
+    texte = _texte(noeud, balise)
+    if texte is None:
+        return None
+    bas = texte.lower()
+    if bas in ("0", "false"):
+        return 0
+    if bas in ("1", "true"):
+        return 1
+    valeur = _entier(noeud, balise)
+    return valeur if valeur in (0, 1) else None
 
 
 def _exiger(noeud: ET.Element | None, balise: str, contexte: str) -> float:
@@ -321,6 +378,21 @@ def _pont(noeud: ET.Element) -> PontThermique:
     )
 
 
+def _ventilation(noeud: ET.Element) -> Ventilation:
+    entree, inter = _entree_inter(noeud)
+    return Ventilation(
+        description=_texte(entree, "description"),
+        reference=_texte(entree, "reference"),
+        tv_debits_ventilation_id=_entier(entree, "tv_debits_ventilation_id"),
+        enum_type_ventilation_id=_entier(entree, "enum_type_ventilation_id"),
+        surface_ventile=_flottant(entree, "surface_ventile"),
+        plusieurs_facade_exposee=_entier_booleen(entree, "plusieurs_facade_exposee"),
+        q4pa_conv=_flottant(inter, "q4pa_conv"),
+        hvent_officiel=_flottant(inter, "hvent"),
+        hperm_officiel=_flottant(inter, "hperm"),
+    )
+
+
 def _deperdition(sortie: ET.Element | None) -> DeperditionOfficielle:
     valeurs: dict[str, float] = {}
     bloc = None if sortie is None else sortie.find("deperdition")
@@ -328,7 +400,7 @@ def _deperdition(sortie: ET.Element | None) -> DeperditionOfficielle:
         for enfant in bloc:
             if enfant.text and enfant.text.strip():
                 try:
-                    valeurs[enfant.tag] = float(enfant.text.strip())
+                    valeurs[enfant.tag] = float(enfant.text.strip().replace(",", "."))
                 except ValueError:
                     pass
     return DeperditionOfficielle(valeurs=valeurs)

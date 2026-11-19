@@ -1,8 +1,12 @@
 """Synthèse des déperditions et comparaison aux valeurs ``<sortie>``."""
 from __future__ import annotations
+
 import math
+
 import pandas as pd
+
 from parser import DeperditionOfficielle
+
 CATEGORIES = (
     ("murs", "Murs", "deperdition_mur"),
     ("planchers_bas", "Planchers bas", "deperdition_plancher_bas"),
@@ -11,15 +15,27 @@ CATEGORIES = (
     ("portes", "Portes", "deperdition_porte"),
     ("ponts_thermiques", "Ponts thermiques", "deperdition_pont_thermique"),
 )
+
 # En dessous de ce seuil, l'écart est un arrondi de coefficient publié
 # (upb à 5 décimales, par exemple), pas une différence de formule.
 SEUIL_ARRONDI_W_K = 1e-2
-def synthetiser(h_par_categorie: dict[str, float]) -> pd.DataFrame:
-    """Total par poste, part dans H_enveloppe, unité W/K.
-    Les parts sont calculées sur l'enveloppe de transmission
-    (parois + ponts), sans le renouvellement d'air.
-    """
-    total = sum(h_par_categorie.get(cle, 0.0) for cle, _, _ in CATEGORIES)
+
+_LIBELLE_SOURCE_AIR = {
+    "calcul_3cl": "Calcul 3CL-DPE (Hvent + Hperm)",
+    "reference_xml": "Référence XML (repli)",
+    "indisponible": "Indisponible",
+}
+
+
+def synthetiser(
+    h_par_categorie: dict[str, float],
+    dr_w_k: float | None = None,
+    source_air: str = "indisponible",
+) -> pd.DataFrame:
+    """Total par poste, part dans GV, unité W/K et source de calcul."""
+    total_transmission = sum(h_par_categorie.get(cle, 0.0) for cle, _, _ in CATEGORIES)
+    total = total_transmission + (dr_w_k if dr_w_k is not None else 0.0)
+
     lignes = []
     for cle, libelle, _ in CATEGORIES:
         valeur = float(h_par_categorie.get(cle, 0.0))
@@ -30,29 +46,51 @@ def synthetiser(h_par_categorie: dict[str, float]) -> pd.DataFrame:
                 "deperdition_w_k": valeur,
                 "part_pct": part,
                 "unite": "W/K",
+                "source": "Calcul 3CL-DPE",
             }
         )
+
+    if dr_w_k is not None:
+        part_air = 0.0 if total == 0 else 100.0 * dr_w_k / total
+        lignes.append(
+            {
+                "categorie": "Renouvellement d'air",
+                "deperdition_w_k": float(dr_w_k),
+                "part_pct": part_air,
+                "unite": "W/K",
+                "source": _LIBELLE_SOURCE_AIR.get(source_air, source_air),
+            }
+        )
+
+    libelle_total = (
+        "Enveloppe globale GV (parois + ponts + air)"
+        if dr_w_k is not None
+        else "Enveloppe (parois + ponts)"
+    )
     lignes.append(
         {
-            "categorie": "Enveloppe (parois + ponts)",
+            "categorie": libelle_total,
             "deperdition_w_k": total,
             "part_pct": 100.0 if total else 0.0,
             "unite": "W/K",
+            "source": "Total",
         }
     )
     return pd.DataFrame(lignes)
+
+
 def comparer(
     h_par_categorie: dict[str, float],
     officiel: DeperditionOfficielle,
+    dr_w_k: float | None = None,
+    air_calcule: bool = False,
 ) -> pd.DataFrame:
-    """Calculé contre les balises ``deperdition_*`` de ``<sortie>``.
-    La dernière ligne reconstitue ``deperdition_enveloppe`` en ajoutant
-    le renouvellement d'air officiel, qui n'est pas recalculé ici.
-    """
+    """Compare chaque poste calculé aux balises ``deperdition_*`` de ``<sortie>``."""
     lignes = []
     total_calcule = 0.0
     total_officiel_transmission = 0.0
     transmission_complete = True
+
     for cle, libelle, balise in CATEGORIES:
         calcule = float(h_par_categorie.get(cle, 0.0))
         reference = officiel.valeur(balise)
@@ -62,6 +100,7 @@ def comparer(
         else:
             total_officiel_transmission += reference
         lignes.append(_ligne(libelle, calcule, reference, f"balise {balise}"))
+
     lignes.append(
         _ligne(
             "Enveloppe transmission (parois + ponts)",
@@ -70,27 +109,51 @@ def comparer(
             "somme des balises deperdition de transmission",
         )
     )
-    air = officiel.valeur("deperdition_renouvellement_air")
-    lignes.append(
-        _ligne(
-            "Renouvellement d'air",
-            None,
-            air,
-            "hors périmètre — non recalculé (hvent + hperm)",
+
+    air_officiel = officiel.valeur("deperdition_renouvellement_air")
+    if air_calcule and dr_w_k is not None:
+        lignes.append(
+            _ligne(
+                "Renouvellement d'air",
+                dr_w_k,
+                air_officiel,
+                "balise deperdition_renouvellement_air (DR = Hvent + Hperm)",
+            )
         )
-    )
+    else:
+        lignes.append(
+            _ligne(
+                "Renouvellement d'air",
+                None,
+                air_officiel,
+                "non recalculé — valeur de référence XML utilisée en repli",
+            )
+        )
+
     enveloppe_xml = officiel.valeur("deperdition_enveloppe")
-    calcule_reconstitue = None if air is None else total_calcule + air
+    if air_calcule and dr_w_k is not None:
+        gv_reconstitue = total_calcule + dr_w_k
+        commentaire_gv = "transmission calculée + renouvellement d'air calculé (3CL-DPE)"
+    elif air_officiel is not None:
+        gv_reconstitue = total_calcule + air_officiel
+        commentaire_gv = (
+            "transmission calculée + renouvellement d'air officiel (repli XML)"
+        )
+    else:
+        gv_reconstitue = None
+        commentaire_gv = "renouvellement d'air indisponible pour reconstituer GV"
+
     lignes.append(
         _ligne(
             "Déperdition enveloppe XML",
-            calcule_reconstitue,
+            gv_reconstitue,
             enveloppe_xml,
-            "transmission calculée + renouvellement d'air officiel. "
-            "deperdition_enveloppe ADEME inclut l'air.",
+            commentaire_gv,
         )
     )
     return pd.DataFrame(lignes)
+
+
 def _ligne(
     categorie: str,
     calcule: float | None,
@@ -104,8 +167,6 @@ def _ligne(
         if officiel != 0:
             ecart_pct = 100.0 * ecart / officiel
         commentaire = _qualifier(ecart, commentaire)
-    elif calcule is None and officiel is not None:
-        commentaire = commentaire
     return {
         "categorie": categorie,
         "calcule_w_k": calcule,
