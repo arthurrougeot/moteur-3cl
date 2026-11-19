@@ -61,6 +61,20 @@ except ValueError as exc:
     st.stop()
 
 vent = resultat.ventilation
+version_label = dpe.version_xsd or "non renseignée"
+
+# --- Message lié à la version du schéma XML ---
+if dpe.statut_version == "stabilisee":
+    st.info(
+        f"**Version du schéma XSD : {version_label} (version stabilisée)** — "
+        "normalement pas de problème avec ce DPE."
+    )
+else:
+    st.warning(
+        f"**Version du schéma XSD : {version_label} (antérieure aux versions stabilisées 2021–2026)** — "
+        "avertissement : la structure ou certaines balises peuvent différer des versions "
+        "stabilisées ; vérifiez attentivement la comparaison avec les valeurs de référence."
+    )
 
 # --- Chiffres clés en haut de page ---
 col_a, col_b, col_c, col_d = st.columns(4)
@@ -68,6 +82,12 @@ col_a.metric("DPE", dpe.numero_dpe or source)
 col_b.metric(
     "Surface habitable",
     "—" if dpe.surface_habitable_m2 is None else f"{dpe.surface_habitable_m2:.1f} m²",
+    delta=(
+        "issue de surface_habitable_immeuble"
+        if dpe.source_surface_habitable == "surface_habitable_immeuble"
+        else None
+    ),
+    delta_color="off",
 )
 col_c.metric("H transmission (parois + ponts)", f"{resultat.h_transmission:.2f} W/K")
 col_d.metric(

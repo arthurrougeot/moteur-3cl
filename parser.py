@@ -5,13 +5,18 @@ le parse. Les coefficients nécessaires au calcul sont vérifiés au moment du c
 """
 from __future__ import annotations
 
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import IO, Iterable, Union
+from typing import IO, Iterable, Literal, Union
 
 from pydantic import BaseModel, Field
 
 SourceXml = Union[str, Path, IO[bytes]]
+StatutVersion = Literal["stabilisee", "avant_stabilisation"]
+
+# Modèles DPE neufs dans le référentiel ADEME (2 = DPE neuf logement, 3 = DPE neuf tertiaire)
+_MODELES_DPE_NEUF = {"2", "3"}
 
 
 class DpeStructureError(ValueError):
@@ -127,7 +132,11 @@ class DeperditionOfficielle(BaseModel):
 
 class Dpe(BaseModel):
     numero_dpe: str | None = None
+    version_xsd: str | None = None
+    statut_version: StatutVersion = "avant_stabilisation"
+    modele_dpe_id: str | None = None
     surface_habitable_m2: float | None = None
+    source_surface_habitable: str | None = None
     hsp_m: float | None = Field(None, description="Hauteur moyenne sous plafond, en m")
     murs: list[Mur]
     planchers_bas: list[PlancherBas]
@@ -137,6 +146,26 @@ class Dpe(BaseModel):
     ponts_thermiques: list[PontThermique]
     ventilations: list[Ventilation] = Field(default_factory=list)
     deperdition: DeperditionOfficielle
+
+
+def _tuple_version(version_str: str | None) -> tuple[int, ...] | None:
+    """Convertit une chaîne de version (ex. '2.4') en tuple d'entiers (2, 4)."""
+    if not version_str:
+        return None
+    morceaux = re.findall(r"\d+", version_str)
+    if not morceaux:
+        return None
+    return tuple(int(m) for m in morceaux)
+
+
+def _evaluer_version(version_str: str | None) -> StatutVersion:
+    """Retourne ``stabilisee`` pour les versions >= 2.1, sinon ``avant_stabilisation``."""
+    parsed = _tuple_version(version_str)
+    if parsed is None:
+        return "avant_stabilisation"
+    if parsed >= (2, 1):
+        return "stabilisee"
+    return "avant_stabilisation"
 
 
 def parse_dpe(source: SourceXml) -> Dpe:
@@ -150,18 +179,37 @@ def parse_dpe(source: SourceXml) -> Dpe:
 
     _retirer_namespaces(racine)
 
+    numero = _texte(racine, "numero_dpe")
+    if racine.tag.lower() == "audit" or (numero and numero.upper().startswith("A")):
+        raise DpeStructureError(
+            "Ce fichier correspond à un Audit énergétique (et non à un DPE). "
+            "Les audits sont exclus du périmètre de ce moteur."
+        )
+
     logement = racine.find("logement")
     if logement is None:
         raise DpeStructureError(
             "Balise <logement> absente : ce fichier ne correspond pas à un XML DPE ADEME."
         )
 
+    admin = racine.find("administratif")
+    modele_dpe_id = _texte(admin, "enum_modele_dpe_id")
+    version_xsd = _texte(admin, "enum_version_id") or racine.get("version")
+
+    if modele_dpe_id in _MODELES_DPE_NEUF:
+        raise DpeStructureError(
+            "DPE neuf exclu : un DPE neuf ne contient pas les informations nécessaires "
+            "au calcul 3CL d'enveloppe classique (les données proviennent du RSET/RSEE "
+            "de l'étude thermique, et <enveloppe> peut être vide ou absente)."
+        )
+
     enveloppe = logement.find("enveloppe")
     if enveloppe is None:
-        version = racine.get("version", "inconnue")
         raise DpeStructureError(
-            f"Balise <logement><enveloppe> absente du XML (version détectée : {version}). "
-            "Ce fichier est trop ancien ou incompatible avec le moteur de calcul 3CL-DPE."
+            f"Balise <logement><enveloppe> absente du XML (version détectée : {version_xsd or 'inconnue'}). "
+            "Si le fichier est un DPE neuf, il ne contient pas les informations de calcul "
+            "3CL d'enveloppe classique (données issues du RSET/RSEE) ; sinon le fichier "
+            "est trop ancien ou incompatible."
         )
 
     murs = [_mur(noeud) for noeud in _items(enveloppe, "mur_collection", "mur")]
@@ -208,11 +256,23 @@ def parse_dpe(source: SourceXml) -> Dpe:
 
     sh_logement = _flottant(carac, "surface_habitable_logement")
     sh_immeuble = _flottant(carac, "surface_habitable_immeuble")
-    surface_habitable = sh_logement if sh_logement is not None else sh_immeuble
+    if sh_logement is not None:
+        surface_habitable = sh_logement
+        source_sh = "surface_habitable_logement"
+    elif sh_immeuble is not None:
+        surface_habitable = sh_immeuble
+        source_sh = "surface_habitable_immeuble"
+    else:
+        surface_habitable = None
+        source_sh = None
 
     return Dpe(
-        numero_dpe=_texte(racine, "numero_dpe"),
+        numero_dpe=numero,
+        version_xsd=version_xsd,
+        statut_version=_evaluer_version(version_xsd),
+        modele_dpe_id=modele_dpe_id,
         surface_habitable_m2=surface_habitable,
+        source_surface_habitable=source_sh,
         hsp_m=_flottant(carac, "hsp"),
         murs=murs,
         planchers_bas=planchers_bas,
