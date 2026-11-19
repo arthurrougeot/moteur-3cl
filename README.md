@@ -22,6 +22,7 @@ python -m venv .venv
 .\.venv\Scripts\python -m pytest
 .\.venv\Scripts\streamlit run app.py
 ```
+<<<<<<< HEAD
 Pour lancer la page web dans un nouveau terminal, exécute :
 
 ```powershell
@@ -78,3 +79,15 @@ GV = Σ H_murs + Σ H_planchers_bas + Σ H_planchers_hauts
 - `report.py` : agrégation de synthèse et comparaison avec `<sortie><deperdition>`.
 - `main.py` : exécution en ligne de commande.
 - `tests/test_engine.py` : tests unitaires `pytest`.
+=======
+`main.py` et `app.py` lisent `data/2671E0055558U.xml` si aucun fichier n'est fourni. L'interface Streamlit accepte aussi un autre XML DPE.
+## Modules
+- `parser.py` — modèles Pydantic et lecture XML tolérante aux balises optionnelles
+- `calculator.py` — un DataFrame par poste, avec la formule appliquée
+- `report.py` — synthèse (W/K et %) et tableau calculé / officiel / écart
+- `tests/test_engine.py` — le total d'enveloppe doit retrouver la référence XML
+- `app.py` — écran Streamlit (synthèse, comparaison, traçabilité)
+
+
+Pour lancer la page WEB ".\.venv\Scripts\streamlit run app.py" dans un nouveau terminal.
+>>>>>>> fb8d5212392152d951a8f6e47e37b6b0d2162174
