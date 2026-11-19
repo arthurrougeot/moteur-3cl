@@ -22,19 +22,18 @@ python -m venv .venv
 .\.venv\Scripts\python -m pytest
 .\.venv\Scripts\streamlit run app.py
 ```
-<<<<<<< HEAD
+
 Pour lancer la page web dans un nouveau terminal, exécute :
 
 ```powershell
 .\.venv\Scripts\streamlit run app.py
-
+```
 
 `main.py` et `app.py` lisent le fichier d'exemple par défaut si aucun XML n'est déposé. L'interface Streamlit permet de glisser-déposer un autre fichier XML DPE ADEME.
 
-```markdown
 ## Jeux d'essai XML et rapports
 
-Le moteur est testé sur plusieurs fichiers XML de l'Observatoire DPE-Audit ADEME représentant des configurations variées (par exemple : maison ancienne, maison récente, appartement ou studio récent), en vérifiant la conformité des totaux aux balises `<sortie><deperdition>` dans la limite du seuil d'arrondi (`0,01 W/K`) et le comportement des garde-fous (versions XSD, exclusions, replis).
+Le moteur est testé sur plusieurs fichiers XML de l'Observatoire DPE-Audit ADEME représentant 3 types de XML différents (par exemple : maison ancienne, maison récente, appartement ou studio récent), en vérifiant la conformité des totaux aux balises `<sortie><deperdition>` dans la limite du seuil d'arrondi (`0,01 W/K`) et le comportement des garde-fous (versions XSD, exclusions, replis).
 
 ## Périmètre et formules
 
@@ -53,7 +52,7 @@ GV = Σ H_murs + Σ H_planchers_bas + Σ H_planchers_hauts
 | Baie vitrée | `surface_totale_baie × U × b` | `ujn` en priorité s'il existe (présence de volets/fermetures pouvant être fermés sur certaines périodes), sinon `uw` |
 | Porte | `surface_porte × uporte × b` | `uporte` |
 | Pont thermique | `k × l × pourcentage × b` | `k` (en W/m.K), pas un U surfacique |
-| Renouvellement d'air | `DR = Hvent + Hperm` | Chapitre 4 de l'Annexe 1 deu PDf consolid... : `Hvent = 0,34 × Qvarep_conv × Sh` et `Hperm = 0,34 × Qvinf` (avec `Q4Pa_env = q4pa_conv × Sdep`, `Q4Pa = Q4Pa_env + 0,45 × Smea_conv × Sh`, `n50 = Q4Pa / ((4/50)^(2/3) × hsp × Sh)` et coefficients `e`, `f` selon `plusieurs_facade_exposee`) |
+| Renouvellement d'air | `DR = Hvent + Hperm` | Chapitre 4 du PDF consolidé `consolide_annexe_1_arrete_du_31_03_2021_relatif_aux_methodes_et_procedures_applicables.pdf` : `Hvent = 0,34 × Qvarep_conv × Sh` et `Hperm = 0,34 × Qvinf` (avec `Q4Pa_env = q4pa_conv × Sdep`, `Q4Pa = Q4Pa_env + 0,45 × Smea_conv × Sh`, `n50 = Q4Pa / ((4/50)^(2/3) × hsp × Sh)` et coefficients `e`, `f` selon `plusieurs_facade_exposee`) |
 
 `b` vaut `1` seulement si la balise est absente. Un `b` publié à `0` est conservé.
 
@@ -79,15 +78,3 @@ GV = Σ H_murs + Σ H_planchers_bas + Σ H_planchers_hauts
 - `report.py` : agrégation de synthèse et comparaison avec `<sortie><deperdition>`.
 - `main.py` : exécution en ligne de commande.
 - `tests/test_engine.py` : tests unitaires `pytest`.
-=======
-`main.py` et `app.py` lisent `data/2671E0055558U.xml` si aucun fichier n'est fourni. L'interface Streamlit accepte aussi un autre XML DPE.
-## Modules
-- `parser.py` — modèles Pydantic et lecture XML tolérante aux balises optionnelles
-- `calculator.py` — un DataFrame par poste, avec la formule appliquée
-- `report.py` — synthèse (W/K et %) et tableau calculé / officiel / écart
-- `tests/test_engine.py` — le total d'enveloppe doit retrouver la référence XML
-- `app.py` — écran Streamlit (synthèse, comparaison, traçabilité)
-
-
-Pour lancer la page WEB ".\.venv\Scripts\streamlit run app.py" dans un nouveau terminal.
->>>>>>> fb8d5212392152d951a8f6e47e37b6b0d2162174
