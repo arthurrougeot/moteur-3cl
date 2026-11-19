@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rapport 3CL-DPE — 2625E0047258U</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; line-height: 1.45; }
+  h1, h2, h3 { color: #111827; margin-top: 20px; }
+  .meta { display: flex; gap: 24px; flex-wrap: wrap; background: #f3f4f6; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; }
+  .badge { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; }
+  .badge.ok { background: #ecfdf5; border-left: 4px solid #10b981; }
+  .badge.warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+  table.table-3cl { border-collapse: collapse; width: 100%; margin-bottom: 16px; font-size: 13px; }
+  table.table-3cl th, table.table-3cl td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; }
+  table.table-3cl th { background: #e5e7eb; }
+</style>
+</head>
+<body>
+  <h1>Rapport de déperditions d'enveloppe — 3CL-DPE</h1>
+  <div class="meta">
+    <div><strong>DPE :</strong> 2625E0047258U</div>
+    <div><strong>Fichier :</strong> STUDIO RECENT.xml</div>
+    <div><strong>Version XSD :</strong> 2.6</div>
+    <div><strong>Surface habitable :</strong> 25.08 m²</div>
+    <div><strong>H transmission :</strong> 29.2710 W/K</div>
+    <div><strong>GV enveloppe :</strong> 44.2370 W/K</div>
+  </div>
+  <div class='badge ok'>Ventilation recalculée (3CL-DPE) : DR = 14.9660 W/K (Hvent = 14.0699 W/K, Hperm = 0.8961 W/K)</div>
+  <h2>Synthèse</h2>
+  <table class="dataframe table-3cl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>categorie</th>
+      <th>deperdition_w_k</th>
+      <th>part_pct</th>
+      <th>unite</th>
+      <th>source</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Murs</td>
+      <td>5.5800</td>
+      <td>12.6139</td>
+      <td>W/K</td>
+      <td>Calcul 3CL-DPE</td>
+    </tr>
+    <tr>
+      <td>Planchers bas</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>W/K</td>
+      <td>Calcul 3CL-DPE</td>
+    </tr>
+    <tr>
+      <td>Planchers hauts</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>W/K</td>
+      <td>Calcul 3CL-DPE</td>
+    </tr>
+    <tr>
+      <td>Baies vitrées</td>
+      <td>7.6940</td>
+      <td>17.3927</td>
+      <td>W/K</td>
+      <td>Calcul 3CL-DPE</td>
+    </tr>
+    <tr>
+      <td>Portes</td>
+      <td>2.8650</td>
+      <td>6.4765</td>
+      <td>W/K</td>
+      <td>Calcul 3CL-DPE</td>
+    </tr>
+    <tr>
+      <td>Ponts thermiques</td>
+      <td>13.1320</td>
+      <td>29.6856</td>
+      <td>W/K</td>
+      <td>Calcul 3CL-DPE</td>
+    </tr>
+    <tr>
+      <td>Renouvellement d'air</td>
+      <td>14.9660</td>
+      <td>33.8313</td>
+      <td>W/K</td>
+      <td>Calcul 3CL-DPE (Hvent + Hperm)</td>
+    </tr>
+    <tr>
+      <td>Enveloppe globale GV (parois + ponts + air)</td>
+      <td>44.2370</td>
+      <td>100.0000</td>
+      <td>W/K</td>
+      <td>Total</td>
+    </tr>
+  </tbody>
+</table>
+  <h2>Comparaison avec la référence XML</h2>
+  <table class="dataframe table-3cl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>categorie</th>
+      <th>calcule_w_k</th>
+      <th>officiel_w_k</th>
+      <th>ecart_w_k</th>
+      <th>ecart_relatif_pct</th>
+      <th>commentaire</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Murs</td>
+      <td>5.5800</td>
+      <td>5.5800</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>balise deperdition_mur — identique</td>
+    </tr>
+    <tr>
+      <td>Planchers bas</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td></td>
+      <td>balise deperdition_plancher_bas — identique</td>
+    </tr>
+    <tr>
+      <td>Planchers hauts</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td></td>
+      <td>balise deperdition_plancher_haut — identique</td>
+    </tr>
+    <tr>
+      <td>Baies vitrées</td>
+      <td>7.6940</td>
+      <td>7.6940</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>balise deperdition_baie_vitree — identique</td>
+    </tr>
+    <tr>
+      <td>Portes</td>
+      <td>2.8650</td>
+      <td>2.8650</td>
+      <td>-0.0000</td>
+      <td>-0.0000</td>
+      <td>balise deperdition_porte — identique</td>
+    </tr>
+    <tr>
+      <td>Ponts thermiques</td>
+      <td>13.1320</td>
+      <td>13.1320</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>balise deperdition_pont_thermique — identique</td>
+    </tr>
+    <tr>
+      <td>Enveloppe transmission (parois + ponts)</td>
+      <td>29.2710</td>
+      <td>29.2710</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>somme des balises deperdition de transmission — identique</td>
+    </tr>
+    <tr>
+      <td>Renouvellement d'air</td>
+      <td>14.9660</td>
+      <td>14.9660</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>balise deperdition_renouvellement_air (DR = Hvent + Hperm) — identique</td>
+    </tr>
+    <tr>
+      <td>Déperdition enveloppe XML</td>
+      <td>44.2370</td>
+      <td>44.2370</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>transmission calculée + renouvellement d'air calculé (3CL-DPE) — identique</td>
+    </tr>
+  </tbody>
+</table>
+  <h2>Traçabilité détaillée par poste</h2>
+  <h3>Murs</h3>
+<table class="dataframe table-3cl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>description</th>
+      <th>surface_m2</th>
+      <th>u_w_m2k</th>
+      <th>b</th>
+      <th>deperdition_w_k</th>
+      <th>formule</th>
+      <th>reference</th>
+      <th>source_u</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Mur&nbsp;&nbsp;1 Est - Mur donnant sur l'extérieur</td>
+      <td>5.1200</td>
+      <td>0.5000</td>
+      <td>1.0000</td>
+      <td>2.5600</td>
+      <td>H = surface_paroi_opaque * umur * b = 5.12 * 0.5 * 1</td>
+      <td>2026_01_08_11_08_39_49467790013458</td>
+      <td>umur</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;2 Ouest - Mur donnant sur l'extérieur</td>
+      <td>5.4900</td>
+      <td>0.5000</td>
+      <td>1.0000</td>
+      <td>2.7450</td>
+      <td>H = surface_paroi_opaque * umur * b = 5.49 * 0.5 * 1</td>
+      <td>2026_01_08_11_09_26_0506893001064644</td>
+      <td>umur</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;3 Sud - Mur donnant sur l'extérieur</td>
+      <td>0.5500</td>
+      <td>0.5000</td>
+      <td>1.0000</td>
+      <td>0.2750</td>
+      <td>H = surface_paroi_opaque * umur * b = 0.55 * 0.5 * 1</td>
+      <td>2026_01_08_11_10_05_4987253002294312</td>
+      <td>umur</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;4 Nord, Sud (p1) - Mur donnant sur un local chauffé</td>
+      <td>18.9900</td>
+      <td>0.5000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>H = surface_paroi_opaque * umur * b = 18.99 * 0.5 * 0</td>
+      <td>2026_01_08_11_10_39_011139900512768</td>
+      <td>umur</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;4 Nord, Sud (p2) - Mur donnant sur un local chauffé</td>
+      <td>18.9900</td>
+      <td>0.5000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>H = surface_paroi_opaque * umur * b = 18.99 * 0.5 * 0</td>
+      <td>2026_01_08_11_10_39_011139900512768(p2)</td>
+      <td>umur</td>
+    </tr>
+  </tbody>
+</table><h3>Planchers bas</h3>
+<table class="dataframe table-3cl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>description</th>
+      <th>surface_m2</th>
+      <th>u_w_m2k</th>
+      <th>b</th>
+      <th>deperdition_w_k</th>
+      <th>formule</th>
+      <th>reference</th>
+      <th>source_u</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Plancher - Dalle béton donnant sur un local chauffé</td>
+      <td>25.0800</td>
+      <td>0.5000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>H = surface_paroi_opaque * upb_final * b = 25.08 * 0.5 * 0</td>
+      <td>2026_01_08_11_11_30_1438875002950709</td>
+      <td>upb_final</td>
+    </tr>
+  </tbody>
+</table><h3>Planchers hauts</h3>
+<table class="dataframe table-3cl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>description</th>
+      <th>surface_m2</th>
+      <th>u_w_m2k</th>
+      <th>b</th>
+      <th>deperdition_w_k</th>
+      <th>formule</th>
+      <th>reference</th>
+      <th>source_u</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Plafond - Dalle béton donnant sur un local chauffé</td>
+      <td>25.0800</td>
+      <td>0.4000</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>H = surface_paroi_opaque * uph * b = 25.08 * 0.4 * 0</td>
+      <td>2026_01_08_11_11_22_5095887005685345</td>
+      <td>uph</td>
+    </tr>
+  </tbody>
+</table><h3>Baies</h3>
+<table class="dataframe table-3cl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>description</th>
+      <th>surface_m2</th>
+      <th>u_w_m2k</th>
+      <th>b</th>
+      <th>deperdition_w_k</th>
+      <th>formule</th>
+      <th>reference</th>
+      <th>source_u</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Fenêtre&nbsp;&nbsp;1 Est - Fenêtres battantes pvc, orientées Est, double vitrage</td>
+      <td>2.0000</td>
+      <td>2.2000</td>
+      <td>1.0000</td>
+      <td>4.4000</td>
+      <td>H = surface_totale_baie * ujn * b = 2 * 2.2 * 1</td>
+      <td>2026_01_08_11_12_34_3281061003742899</td>
+      <td>ujn</td>
+    </tr>
+    <tr>
+      <td>Fenêtre&nbsp;&nbsp;2 Ouest - Fenêtres oscillo-battantes pvc, orientées Ouest, double vitrage</td>
+      <td>1.2200</td>
+      <td>2.7000</td>
+      <td>1.0000</td>
+      <td>3.2940</td>
+      <td>H = surface_totale_baie * uw * b = 1.22 * 2.7 * 1 (ujn absent : pas de fermeture)</td>
+      <td>2026_01_08_11_14_04_2405360008001918</td>
+      <td>uw</td>
+    </tr>
+  </tbody>
+</table><h3>Portes</h3>
+<table class="dataframe table-3cl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>description</th>
+      <th>surface_m2</th>
+      <th>u_w_m2k</th>
+      <th>b</th>
+      <th>deperdition_w_k</th>
+      <th>formule</th>
+      <th>reference</th>
+      <th>source_u</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Porte - Porte(s) autres opaque pleine isolée</td>
+      <td>1.9100</td>
+      <td>1.5000</td>
+      <td>1.0000</td>
+      <td>2.8650</td>
+      <td>H = surface_porte * uporte * b = 1.91 * 1.5 * 1</td>
+      <td>2026_01_08_11_16_33_0204832004229227</td>
+      <td>uporte</td>
+    </tr>
+  </tbody>
+</table><h3>Ponts thermiques</h3>
+<table class="dataframe table-3cl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>description</th>
+      <th>longueur_m</th>
+      <th>k_w_mk</th>
+      <th>pourcentage</th>
+      <th>b</th>
+      <th>deperdition_w_k</th>
+      <th>formule</th>
+      <th>reference</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Mur&nbsp;&nbsp;1 Est / Fenêtre&nbsp;&nbsp;1 Est</td>
+      <td>6.0000</td>
+      <td>0.0000</td>
+      <td>1.0000</td>
+      <td>1.0000</td>
+      <td>0.0000</td>
+      <td>H = k * l * pourcentage * b = 0 * 6 * 1 * 1</td>
+      <td>PT_1</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;2 Ouest / Fenêtre&nbsp;&nbsp;2 Ouest</td>
+      <td>4.5800</td>
+      <td>0.0000</td>
+      <td>1.0000</td>
+      <td>1.0000</td>
+      <td>0.0000</td>
+      <td>H = k * l * pourcentage * b = 0 * 4.58 * 1 * 1</td>
+      <td>PT_2</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;3 Sud / Porte</td>
+      <td>5.0300</td>
+      <td>0.0000</td>
+      <td>1.0000</td>
+      <td>1.0000</td>
+      <td>0.0000</td>
+      <td>H = k * l * pourcentage * b = 0 * 5.03 * 1 * 1</td>
+      <td>PT_3</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;1 Est / Plafond</td>
+      <td>3.0200</td>
+      <td>0.9200</td>
+      <td>0.5000</td>
+      <td>1.0000</td>
+      <td>1.3892</td>
+      <td>H = k * l * pourcentage * b = 0.92 * 3.02 * 0.5 * 1</td>
+      <td>PT_4</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;1 Est / Refend</td>
+      <td>4.7200</td>
+      <td>0.8200</td>
+      <td>1.0000</td>
+      <td>1.0000</td>
+      <td>3.8704</td>
+      <td>H = k * l * pourcentage * b = 0.82 * 4.72 * 1 * 1</td>
+      <td>PT_5</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;1 Est / Plancher</td>
+      <td>3.0200</td>
+      <td>0.9200</td>
+      <td>0.5000</td>
+      <td>1.0000</td>
+      <td>1.3892</td>
+      <td>H = k * l * pourcentage * b = 0.92 * 3.02 * 0.5 * 1</td>
+      <td>PT_6</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;2 Ouest / Plafond</td>
+      <td>2.8400</td>
+      <td>0.9200</td>
+      <td>0.5000</td>
+      <td>1.0000</td>
+      <td>1.3064</td>
+      <td>H = k * l * pourcentage * b = 0.92 * 2.84 * 0.5 * 1</td>
+      <td>PT_7</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;2 Ouest / Refend</td>
+      <td>4.7200</td>
+      <td>0.8200</td>
+      <td>1.0000</td>
+      <td>1.0000</td>
+      <td>3.8704</td>
+      <td>H = k * l * pourcentage * b = 0.82 * 4.72 * 1 * 1</td>
+      <td>PT_8</td>
+    </tr>
+    <tr>
+      <td>Mur&nbsp;&nbsp;2 Ouest / Plancher</td>
+      <td>2.8400</td>
+      <td>0.9200</td>
+      <td>0.5000</td>
+      <td>1.0000</td>
+      <td>1.3064</td>
+      <td>H = k * l * pourcentage * b = 0.92 * 2.84 * 0.5 * 1</td>
+      <td>PT_9</td>
+    </tr>
+  </tbody>
+</table><h3>Ventilation</h3>
+<table class="dataframe table-3cl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>description_xml</th>
+      <th>tv_debits_ventilation_id</th>
+      <th>entree_table_3cl</th>
+      <th>source_identification</th>
+      <th>statut</th>
+      <th>surface_ventile_m2</th>
+      <th>hsp_m</th>
+      <th>sdep_m2</th>
+      <th>qvarep_conv</th>
+      <th>qvasouf_conv</th>
+      <th>smea_conv</th>
+      <th>plusieurs_facades</th>
+      <th>e</th>
+      <th>f</th>
+      <th>q4pa_conv</th>
+      <th>q4pa_env</th>
+      <th>q4pa</th>
+      <th>n50_h_1</th>
+      <th>qvinf_m3_h</th>
+      <th>hvent_w_k</th>
+      <th>hperm_w_k</th>
+      <th>deperdition_w_k</th>
+      <th>formule</th>
+      <th>reference</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>VMC SF Auto réglable de 1982 à 2000</td>
+      <td>4</td>
+      <td>VMC SF Auto réglable de 1982 à 2000</td>
+      <td>tv_debits_ventilation_id=4</td>
+      <td>Calculé (3CL-DPE)</td>
+      <td>25.0800</td>
+      <td>2.3600</td>
+      <td>16.2900</td>
+      <td>1.6500</td>
+      <td>0.0000</td>
+      <td>2.0000</td>
+      <td>1</td>
+      <td>0.0700</td>
+      <td>15.0000</td>
+      <td>1.5000</td>
+      <td>24.4350</td>
+      <td>47.0070</td>
+      <td>4.2776</td>
+      <td>2.6355</td>
+      <td>14.0699</td>
+      <td>0.8961</td>
+      <td>14.9660</td>
+      <td>Hvent = 0.34 * 1.65 * 25.08 = 14.0699 W/K ; Hperm = 0.34 * 2.63553 = 0.89608 W/K ; DR = 14.966 W/K</td>
+      <td>2026_01_08_11_18_25_1520073006799991</td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>

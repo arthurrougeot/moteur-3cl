@@ -184,3 +184,90 @@ def _qualifier(ecart: float, commentaire: str) -> str:
     if abs(ecart) < SEUIL_ARRONDI_W_K:
         return f"{commentaire} — écart d'arrondi"
     return f"{commentaire} — ÉCART À EXPLIQUER"
+
+def generer_rapport_html(
+    dpe: "Dpe",
+    resultat: "ResultatCalcul",
+    source_nom: str = "dpe.xml",
+) -> str:
+    """Génère un rapport HTML autonome à partir d'un Dpe et de son ResultatCalcul."""
+    import html
+
+    def _df_to_html(df: pd.DataFrame) -> str:
+        if df.empty:
+            return "<p><em>Aucun élément dans cette catégorie.</em></p>"
+        copie = df.copy()
+        for col in copie.select_dtypes(include=["float", "int"]).columns:
+            copie[col] = copie[col].map(
+                lambda v: "" if pd.isna(v) else f"{v:.4f}" if isinstance(v, float) else str(v)
+            )
+        copie = copie.fillna("")
+        return copie.to_html(index=False, border=0, classes="table-3cl")
+
+    vent = resultat.ventilation
+    if vent.calcule:
+        vent_bloc = (
+            f"<div class='badge ok'>Ventilation recalculée (3CL-DPE) : "
+            f"DR = {vent.dr_w_k:.4f} W/K (Hvent = {vent.hvent_w_k:.4f} W/K, "
+            f"Hperm = {vent.hperm_w_k:.4f} W/K)</div>"
+        )
+    else:
+        causes_html = "".join(
+            f"<li>{html.escape(r)}</li>" for r in vent.raisons_echec
+        )
+        dr_txt = f"{vent.dr_w_k:.4f} W/K" if vent.dr_w_k is not None else "indisponible"
+        vent_bloc = (
+            f"<div class='badge warn'>Ventilation non recalculée — repli référence XML "
+            f"({dr_txt})<ul>{causes_html}</ul></div>"
+        )
+
+    blocs_details = []
+    for cle, cadre in resultat.details.items():
+        titre = html.escape(cle.replace("_", " ").capitalize())
+        blocs_details.append(f"<h3>{titre}</h3>\n{_df_to_html(cadre)}")
+
+    sh_txt = (
+        f"{dpe.surface_habitable_m2:.2f} m²"
+        if dpe.surface_habitable_m2 is not None
+        else "—"
+    )
+    num_dpe = html.escape(dpe.numero_dpe or source_nom)
+    version_txt = html.escape(dpe.version_xsd or "non renseignée")
+
+    return f"""<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rapport 3CL-DPE — {num_dpe}</title>
+<style>
+  body {{ font-family: Arial, sans-serif; margin: 24px; color: #1f2937; line-height: 1.45; }}
+  h1, h2, h3 {{ color: #111827; margin-top: 20px; }}
+  .meta {{ display: flex; gap: 24px; flex-wrap: wrap; background: #f3f4f6; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; }}
+  .badge {{ padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; }}
+  .badge.ok {{ background: #ecfdf5; border-left: 4px solid #10b981; }}
+  .badge.warn {{ background: #fffbeb; border-left: 4px solid #f59e0b; }}
+  table.table-3cl {{ border-collapse: collapse; width: 100%; margin-bottom: 16px; font-size: 13px; }}
+  table.table-3cl th, table.table-3cl td {{ border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; }}
+  table.table-3cl th {{ background: #e5e7eb; }}
+</style>
+</head>
+<body>
+  <h1>Rapport de déperditions d'enveloppe — 3CL-DPE</h1>
+  <div class="meta">
+    <div><strong>DPE :</strong> {num_dpe}</div>
+    <div><strong>Fichier :</strong> {html.escape(source_nom)}</div>
+    <div><strong>Version XSD :</strong> {version_txt}</div>
+    <div><strong>Surface habitable :</strong> {sh_txt}</div>
+    <div><strong>H transmission :</strong> {resultat.h_transmission:.4f} W/K</div>
+    <div><strong>GV enveloppe :</strong> {resultat.h_enveloppe:.4f} W/K</div>
+  </div>
+  {vent_bloc}
+  <h2>Synthèse</h2>
+  {_df_to_html(resultat.synthese)}
+  <h2>Comparaison avec la référence XML</h2>
+  {_df_to_html(resultat.comparaison)}
+  <h2>Traçabilité détaillée par poste</h2>
+  {"".join(blocs_details)}
+</body>
+</html>
+"""

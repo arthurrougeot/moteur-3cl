@@ -12,6 +12,8 @@ from calculator import calculer_enveloppe
 from parser import DpeStructureError, parse_dpe
 from report import SEUIL_ARRONDI_W_K
 
+from report import SEUIL_ARRONDI_W_K, generer_rapport_html
+
 ECHANTILLON = Path(__file__).resolve().parent / "data" / "2671E0055558U.xml"
 
 
@@ -154,6 +156,16 @@ else:
         f"{ecart:+.4f} W/K{detail_pct} (tolérance admise : ±{SEUIL_ARRONDI_W_K} W/K). "
         "Consultez l'onglet « Comparaison ADEME » pour identifier le poste en cause."
     )
+
+rapport_html = generer_rapport_html(dpe, resultat, source_nom=source)
+nom_export = f"rapport_{(dpe.numero_dpe or Path(source).stem)}.html"
+
+st.download_button(
+    label="Télécharger le rapport HTML",
+    data=rapport_html.encode("utf-8"),
+    file_name=nom_export,
+    mime="text/html",
+)
 
 onglet_synthese, onglet_comparaison, onglet_detail = st.tabs(
     ["Synthèse", "Comparaison ADEME", "Traçabilité"]
